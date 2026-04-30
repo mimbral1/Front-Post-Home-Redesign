@@ -49,3 +49,6 @@ El estado mock vive en:
 - `src/components/pos/PrimaryActionCard.tsx`
 - `src/components/pos/OperationalStepIndicator.tsx`
 - `src/components/pos/SecondaryActionsMenu.tsx`
+
+
+subido
