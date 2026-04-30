@@ -1,0 +1,64 @@
+
+> pos-home-redesign@1.0.0 dev
+> vite --host 127.0.0.1
+
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m876[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
+[2m5:05:06 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/SecondaryActionsMenu.tsx[22m
+[2m5:05:06 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/SecondaryActionsMenu.tsx[22m
+[2m5:05:06 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/PrimaryActionCard.tsx[22m
+[2m5:05:06 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/ActionModal.tsx[22m
+[2m5:05:45 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:06:20 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:06:29 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m5:06:59 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/PosHomeStatePanel.tsx[22m
+[2m5:06:59 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:07:19 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:18:27 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:19:08 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/lib/posStateMachine.ts[22m
+[2m5:20:29 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m5:21:03 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:21:03 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/mocks/posState.ts[22m
+[2m5:24:00 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:24:37 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/CartPanel.tsx[22m
+[2m5:24:37 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/ActiveSaleWorkspace.tsx[22m
+[2m5:25:15 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:25:48 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m5:25:59 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/ProductSearchInput.tsx[22m
+[2m5:26:53 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/PaymentScreen.tsx[22m
+[2m5:26:53 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/CustomerSelector.tsx[22m
+[2m5:26:53 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/SaleSummary.tsx[22m
+[2m5:32:10 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:32:17 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:32:31 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/OpenSalesTabs.tsx[22m
+[2m5:32:51 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/CartPanel.tsx[22m
+[2m5:32:51 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/ActiveSaleWorkspace.tsx[22m
+[2m5:32:51 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/CheckoutPanel.tsx[22m
+[2m5:33:46 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:33:59 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:34:13 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/CheckoutPanel.tsx[22m
+[2m5:34:29 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m5:35:05 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:35:36 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/CheckoutPanel.tsx[22m
+[2m5:41:59 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:42:17 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:42:31 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/ActiveSaleWorkspace.tsx[22m
+[2m5:42:42 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/CartPanel.tsx[22m
+[2m5:42:57 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:43:37 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m5:44:20 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:46:50 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:47:06 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m5:47:23 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m5:52:58 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/ProductSearchInput.tsx[22m
+[2m5:52:58 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/CheckoutPanel.tsx[22m
+[2m5:52:59 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:53:19 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx[22m
+[2m5:54:49 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/ActionModal.tsx[22m
+[2m5:54:49 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/PrimaryActionCard.tsx[22m
+[2m5:54:49 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/SecondaryActionsMenu.tsx[22m
+[2m5:54:49 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/PosHomeStatePanel.tsx[22m
+[2m5:54:50 p. m.[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/pos/OperationalStepIndicator.tsx[22m
+[2m5:54:50 p. m.[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/services/posState.service.ts[22m
