@@ -6,6 +6,7 @@ type ProductSearchInputProps = {
   products: Product[];
   disabled?: boolean;
   onProductSelected: (product: Product) => void;
+  onPreventaCode: (preventaId: string) => void;
   onMissingProduct: (query: string) => void;
 };
 
@@ -13,6 +14,7 @@ export function ProductSearchInput({
   products,
   disabled = false,
   onProductSelected,
+  onPreventaCode,
   onMissingProduct,
 }: ProductSearchInputProps) {
   const [query, setQuery] = useState('');
@@ -25,7 +27,7 @@ export function ProductSearchInput({
       const isTypingField =
         active instanceof HTMLInputElement &&
         active !== inputRef.current &&
-        active.closest('.checkout-panel, .cart-item, .preventa-input');
+        active.closest('.checkout-panel, .cart-item, .preventa-input, .rut-popover');
       if (!disabled && !isTypingField) inputRef.current?.focus();
     };
 
@@ -59,6 +61,13 @@ export function ProductSearchInput({
   const submit = () => {
     const value = query.trim().toLowerCase();
     if (!value) return;
+    if (value.toUpperCase().startsWith('PV')) {
+      onPreventaCode(query.trim().toUpperCase());
+      setQuery('');
+      window.setTimeout(() => inputRef.current?.focus(), 0);
+      return;
+    }
+
     const product = products.find(
       (entry) =>
         entry.barcode.toLowerCase() === value ||
@@ -83,7 +92,7 @@ export function ProductSearchInput({
           disabled={disabled}
           data-product-search="true"
           value={query}
-          placeholder="SKU, codigo de barras o nombre"
+          placeholder="Escanear producto, SKU o preventa"
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'Enter') submit();

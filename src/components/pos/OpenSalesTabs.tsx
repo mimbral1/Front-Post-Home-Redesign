@@ -11,6 +11,7 @@ type OpenSalesTabsProps = {
 };
 
 function statusLabel(status: SaleTab['status']) {
+  if (status === 'ACTIVE') return 'Activa';
   if (status === 'ON_HOLD') return 'En espera';
   if (status === 'READY_TO_PAY') return 'Lista';
   if (status === 'PAID') return 'Pagada';
@@ -37,12 +38,17 @@ export function OpenSalesTabs({
             key={tab.id}
             className={`sale-tab ${tab.id === activeTabId ? 'sale-tab-active' : ''} sale-tab-${tab.status.toLowerCase()}`}
           >
-            <button type="button" role="tab" onClick={() => onSelectSale(tab.id)}>
-              <span>{tab.displayNumber}</span>
-              <small>{tab.customer.name || 'Cliente generico'}</small>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab.id === activeTabId}
+              title={`${tab.displayNumber} - ${tab.customer.name || 'Cliente generico'} - ${formatCurrency(tab.total)}`}
+              onClick={() => onSelectSale(tab.id)}
+            >
+              <span className="sale-tab-number">{tab.displayNumber.replace('Venta ', 'V')}</span>
               <strong>{formatCurrency(tab.total)}</strong>
-              {tab.pendingSync && <em>Pendiente sync</em>}
-              {statusLabel(tab.status) && <em>{statusLabel(tab.status)}</em>}
+              <em>{tab.id === activeTabId ? statusLabel(tab.status) : 'Retomar'}</em>
+              {tab.pendingSync && <span className="sync-dot" title="Pendiente de sincronizacion" />}
             </button>
             <button
               className="sale-tab-close"

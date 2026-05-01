@@ -1,27 +1,27 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatCurrency } from '../../lib/format';
-import { finalCustomer, mockCustomers } from '../../mocks/customers';
-import type { Customer, PaymentMethod, SaleTab } from '../../types/pos';
+import type { PaymentMethod, SaleTab } from '../../types/pos';
 
 type CheckoutPanelProps = {
   sale: SaleTab;
   canPay: boolean;
   message: string | null;
   paymentBusy: boolean;
-  onCustomerChange: (customer: Customer) => void;
+  paymentShortcutToken: number;
+  onOpenCustomerPopup: () => void;
   onPaymentChange: (payment: Partial<SaleTab['payment']>) => void;
   onConfirmPayment: () => void;
 };
 
 const fastMethods: Array<{ id: PaymentMethod; label: string }> = [
-  { id: 'CASH', label: 'Efectivo' },
-  { id: 'DEBIT_CARD', label: 'Debito' },
-  { id: 'CREDIT_CARD', label: 'Credito' },
+  { id: 'CASH', label: 'EFECTIVO' },
+  { id: 'DEBIT_CARD', label: 'DEBITO' },
+  { id: 'CREDIT_CARD', label: 'CREDITO' },
 ];
 
 function terminalText(status: SaleTab['payment']['terminalStatus']) {
   if (status === 'CONNECTING') return 'Conectando terminal';
-  if (status === 'WAITING') return 'Esperando pago...';
+  if (status === 'WAITING') return 'Esperando pago en terminal...';
   if (status === 'APPROVED') return 'Pago aprobado';
   if (status === 'REJECTED') return 'Pago rechazado';
   if (status === 'CONNECTION_ERROR') return 'Error de conexion';
@@ -34,30 +34,34 @@ export function CheckoutPanel({
   canPay,
   message,
   paymentBusy,
-  onCustomerChange,
+  paymentShortcutToken,
+  onOpenCustomerPopup,
   onPaymentChange,
   onConfirmPayment,
 }: CheckoutPanelProps) {
-  const [customerQuery, setCustomerQuery] = useState('');
   const [payOpen, setPayOpen] = useState(false);
   const productCount = sale.items.reduce((sum, item) => sum + item.quantity, 0);
+  const hasProducts = productCount > 0;
   const change = Math.max(0, sale.payment.cashReceived - sale.total);
 
   useEffect(() => {
     setPayOpen(false);
   }, [sale.id]);
 
-  const customerMatches = useMemo(() => {
-    const query = customerQuery.trim().toLowerCase();
-    if (query.length < 2) return [];
-    return mockCustomers
-      .filter(
-        (customer) =>
-          customer.name.toLowerCase().includes(query) ||
-          customer.rut?.toLowerCase().includes(query)
-      )
-      .slice(0, 3);
-  }, [customerQuery]);
+  useEffect(() => {
+    if (paymentShortcutToken > 0 && canPay) {
+      setPayOpen(true);
+    }
+  }, [canPay, paymentShortcutToken]);
+
+  useEffect(() => {
+    if (!payOpen) return;
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPayOpen(false);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [payOpen]);
 
   const selectMethod = (method: PaymentMethod) => {
     setPayOpen(true);
@@ -69,54 +73,29 @@ export function CheckoutPanel({
 
   return (
     <aside className="checkout-panel">
+      <button className="customer-rut-button" type="button" onClick={onOpenCustomerPopup}>
+        <span>Cliente / RUT</span>
+        <strong>{sale.customer.id ? sale.customer.name : 'Cliente ocasional'}</strong>
+        <small>Cambiar con F4</small>
+      </button>
+
       <section className="total-card">
-        <span>Total</span>
+        <span>Total a pagar</span>
         <strong>{formatCurrency(sale.total)}</strong>
         <small>{productCount} productos</small>
       </section>
 
-      <section className="inline-customer">
-        <div>
-          <strong>Cliente</strong>
-          <span>{sale.customer.name}</span>
-        </div>
-        <input
-          data-customer-search="true"
-          value={customerQuery}
-          placeholder="RUT o nombre"
-          onChange={(event) => setCustomerQuery(event.target.value)}
-        />
-        {customerMatches.length > 0 && (
-          <div className="inline-results">
-            {customerMatches.map((customer) => (
-              <button
-                key={customer.id}
-                type="button"
-                onClick={() => {
-                  onCustomerChange(customer);
-                  setCustomerQuery('');
-                }}
-              >
-                {customer.name}
-                <span>{customer.rut}</span>
-              </button>
-            ))}
-          </div>
-        )}
-        <button type="button" onClick={() => onCustomerChange(finalCustomer)}>
-          Cliente ocasional
-        </button>
-      </section>
+      <section className={`quick-pay ${payOpen ? 'quick-pay-open' : ''}`}>
+        {!hasProducts && <p className="checkout-empty-hint">Escanea productos para comenzar</p>}
 
-      <section className="quick-pay">
-        {!payOpen && (
+        {hasProducts && !payOpen && (
           <button
             className="primary-button pay-button"
             type="button"
             disabled={!canPay || paymentBusy}
             onClick={() => setPayOpen(true)}
           >
-            {canPay ? 'PAGAR' : 'Agrega productos'}
+            PAGAR
           </button>
         )}
 
@@ -136,15 +115,38 @@ export function CheckoutPanel({
             </div>
 
             {sale.payment.method === 'CASH' && (
-              <label className="field">
+              <label className="field cash-field">
                 <span>Monto recibido</span>
                 <input
                   type="number"
                   min={0}
                   value={sale.payment.cashReceived || ''}
                   onChange={(event) => onPaymentChange({ cashReceived: Number(event.target.value) })}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && sale.payment.cashReceived >= sale.total) {
+                      event.preventDefault();
+                      onConfirmPayment();
+                    }
+                  }}
                 />
                 <small>Vuelto: {formatCurrency(change)}</small>
+              </label>
+            )}
+
+            {sale.payment.method === 'BANK_TRANSFER' && (
+              <label className="field transfer-field">
+                <span>Codigo de operacion</span>
+                <input
+                  value={sale.payment.transferCode}
+                  placeholder="Ej: TRX-4582"
+                  onChange={(event) => onPaymentChange({ transferCode: event.target.value })}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && sale.payment.transferCode.trim()) {
+                      event.preventDefault();
+                      onConfirmPayment();
+                    }
+                  }}
+                />
               </label>
             )}
 
@@ -158,7 +160,7 @@ export function CheckoutPanel({
                   Simular rechazado
                 </button>
                 <button type="button" disabled={paymentBusy} onClick={() => onPaymentChange({ terminalStatus: 'CANCELLED' })}>
-                  Cancelar pago
+                  Cancelar
                 </button>
               </div>
             )}
