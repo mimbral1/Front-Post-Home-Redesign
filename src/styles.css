@@ -80,7 +80,7 @@ button:disabled {
   border: 0;
   border-radius: 0;
   box-shadow: 0 6px 18px rgba(17, 31, 44, 0.08);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .gate-screen h2,
@@ -156,6 +156,43 @@ button:disabled {
 
 .nav-link-hot {
   color: #ffd6db;
+}
+
+.topbar-options {
+  position: relative;
+}
+
+.topbar-options-trigger {
+  min-height: 32px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.13);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.topbar-options-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 40;
+}
+
+.topbar-options-menu button {
+  min-width: 132px;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: white;
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  font-weight: 900;
+  cursor: pointer;
 }
 
 .topbar-context {
@@ -355,6 +392,140 @@ button:disabled {
 
 .ready-screen .primary-button {
   min-width: 280px;
+}
+
+.shift-screen {
+  width: min(100%, 680px);
+  min-height: 430px;
+  justify-self: center;
+  padding: 28px;
+  display: grid;
+  gap: 16px;
+  align-content: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: white;
+  box-shadow: var(--shadow);
+  animation: state-in 180ms ease-out;
+}
+
+.shift-screen-centered {
+  text-align: center;
+  justify-items: center;
+}
+
+.shift-screen h2,
+.shift-screen p {
+  margin: 0;
+}
+
+.shift-screen h2 {
+  font-size: 1.7rem;
+}
+
+.shift-meta {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: #f4f7fa;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.shift-money-field input {
+  min-height: 62px;
+  font-family: var(--mono);
+  font-size: 1.55rem;
+  font-weight: 900;
+}
+
+.shift-primary {
+  min-height: 62px;
+  font-size: 1.1rem;
+}
+
+.shift-total-box,
+.difference-box {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: #eef6ff;
+  color: var(--brand-blue);
+}
+
+.shift-total-soft {
+  background: #f4f7fa;
+  color: var(--ink);
+}
+
+.shift-total-box span,
+.difference-box span {
+  font-weight: 800;
+}
+
+.shift-total-box strong {
+  font-family: var(--mono);
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+.shift-difference {
+  padding: 12px;
+  border-radius: var(--radius);
+  font-family: var(--mono);
+  font-size: 1.2rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.diff-ok {
+  color: var(--success);
+}
+
+.shift-difference.diff-ok {
+  background: #e9f8f0;
+}
+
+.diff-alert {
+  color: var(--danger);
+}
+
+.shift-difference.diff-alert {
+  background: #fff1f0;
+}
+
+.shift-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.shift-summary {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.shift-summary div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.shift-summary dt {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.shift-summary dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-weight: 900;
 }
 
 .sales-tabs-shell {

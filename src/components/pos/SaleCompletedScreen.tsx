@@ -1,19 +1,11 @@
 import { formatCurrency } from '../../lib/format';
+import { paymentLabel } from '../../lib/payment';
 import type { SaleTab } from '../../types/pos';
 
 type SaleCompletedScreenProps = {
   sale: SaleTab;
   onNewSale: () => void;
 };
-
-function paymentLabel(method: SaleTab['payment']['method']) {
-  if (method === 'CASH') return 'EFECTIVO';
-  if (method === 'DEBIT_CARD') return 'DEBITO';
-  if (method === 'CREDIT_CARD') return 'CREDITO';
-  if (method === 'BANK_TRANSFER') return 'TRANSFERENCIA';
-  if (method === 'OTHER') return 'OTRO';
-  return 'SIN MEDIO';
-}
 
 export function SaleCompletedScreen({ sale, onNewSale }: SaleCompletedScreenProps) {
   return (

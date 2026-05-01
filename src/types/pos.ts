@@ -1,11 +1,3 @@
-export type PosOperationalState =
-  | 'CASH_CLOSED'
-  | 'SHIFT_CLOSED'
-  | 'READY_TO_SELL'
-  | 'SALE_IN_PROGRESS'
-  | 'PAYMENT_IN_PROGRESS'
-  | 'SALE_COMPLETED';
-
 export type SaleTabStatus = 'ACTIVE' | 'ON_HOLD' | 'READY_TO_PAY' | 'PAID' | 'CANCELLED';
 
 export type PaymentMethod =
@@ -110,42 +102,26 @@ export type PosState = {
   cashierName: string;
   storeName: string;
   terminalName: string;
+  shiftOpenedAt?: string | null;
+  openingFloat?: number;
+  shiftSalesTotal?: number;
+  shiftCashTotal?: number;
+  lastShiftClose?: ShiftCloseSummary | null;
 };
 
-export type StepItem = {
-  id: string;
-  label: string;
-  status: 'completed' | 'active' | 'pending';
+export type ShiftCloseSummary = {
+  shiftId: string;
+  terminalName: string;
+  cashierName: string;
+  storeName: string;
+  openedAt: string | null;
+  closedAt: string;
+  openingFloat: number;
+  salesTotal: number;
+  expectedCash: number;
+  declaredCash: number;
+  difference: number;
+  observation?: string;
+  supervisorUser?: string;
 };
 
-export type PosOperationalStatus =
-  | 'cash-closed'
-  | 'shift-pending'
-  | 'ready-to-sell'
-  | 'sale-in-progress';
-
-export type PrimaryAction = {
-  label: string;
-  helper: string;
-  nextRoute?: string;
-};
-
-export type SecondaryActionId =
-  | 'presale'
-  | 'search-sale'
-  | 'sales-history'
-  | 'change-register'
-  | 'add-cash'
-  | 'cash-out'
-  | 'close-shift'
-  | 'close-register'
-  | 'cancel-sale'
-  | 'save-sale'
-  | 'sale-summary'
-  | 'settings';
-
-export type SecondaryAction = {
-  id: SecondaryActionId;
-  label: string;
-  description: string;
-};

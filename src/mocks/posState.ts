@@ -8,4 +8,9 @@ export const mockPosState: PosState = {
   cashierName: 'Maria Gonzalez',
   storeName: 'Mimbral San Javier',
   terminalName: 'POS 01',
+  shiftOpenedAt: new Date().toISOString(),
+  openingFloat: 100000,
+  shiftSalesTotal: 0,
+  shiftCashTotal: 0,
+  lastShiftClose: null,
 };

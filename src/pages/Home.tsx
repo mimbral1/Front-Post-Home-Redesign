@@ -3,31 +3,28 @@ import { ActiveSaleWorkspace } from '../components/pos/ActiveSaleWorkspace';
 import { ConfirmDialog } from '../components/pos/ConfirmDialog';
 import { CustomerRutPopup } from '../components/pos/CustomerRutPopup';
 import { OpenSalesTabs } from '../components/pos/OpenSalesTabs';
-import { PosStatusBar } from '../components/pos/PosStatusBar';
+import { PosHeader } from '../components/pos/PosHeader';
 import { SaleCompletedScreen } from '../components/pos/SaleCompletedScreen';
+import { ShiftControlPanel } from '../components/pos/ShiftControlPanel';
+import { playScanBeep } from '../lib/audio';
+import { isCardPayment, paymentLabel, validateSalePayment } from '../lib/payment';
+import { addPaidSaleToShift, closeShiftState, expectedShiftCash, openShiftState } from '../lib/shift';
 import { mockPosState } from '../mocks/posState';
 import { mockFindPreventa, mockProcessPayment } from '../services/posMockApi';
 import type { ConnectionStatus, PosState, Product, SaleItem, SaleTab, UserRole } from '../types/pos';
 import { useOpenSalesTabs } from '../hooks/useOpenSalesTabs';
+import { usePersistentState } from '../hooks/usePersistentState';
 
 type PendingCancel =
   | { type: 'sale'; sale: SaleTab }
   | { type: 'item'; item: SaleItem }
-  | { type: 'close-register' }
   | null;
+
+type ShiftCloseMode = 'count' | 'supervisor' | 'summary' | null;
 
 const POS_STATE_KEY = 'pos.terminalState';
 const ROLE_KEY = 'pos.userRole';
 const CONNECTION_KEY = 'pos.connectionStatus';
-
-function loadJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
 
 function focusProductInput() {
   window.setTimeout(() => {
@@ -42,32 +39,12 @@ function isEditingFormField() {
   return active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement;
 }
 
-function playScanBeep() {
-  try {
-    const AudioContextClass =
-      window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const context = new AudioContextClass();
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = 'sine';
-    oscillator.frequency.value = 880;
-    gain.gain.setValueAtTime(0.035, context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.08);
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-    oscillator.start();
-    oscillator.stop(context.currentTime + 0.08);
-  } catch {
-    // Optional audio feedback should never interrupt the sale.
-  }
-}
-
 export function Home() {
-  const [posState, setPosState] = useState<PosState>(() => loadJson(POS_STATE_KEY, mockPosState));
-  const [role, setRole] = useState<UserRole>(() => loadJson(ROLE_KEY, 'CASHIER' as UserRole));
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(() =>
-    loadJson(CONNECTION_KEY, 'CONNECTED' as ConnectionStatus)
+  const [posState, setPosState] = usePersistentState<PosState>(POS_STATE_KEY, mockPosState);
+  const [role, setRole] = usePersistentState<UserRole>(ROLE_KEY, 'CASHIER');
+  const [connectionStatus, setConnectionStatus] = usePersistentState<ConnectionStatus>(
+    CONNECTION_KEY,
+    'CONNECTED'
   );
   const [message, setMessage] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -77,9 +54,12 @@ export function Home() {
   const [customerPopupOpen, setCustomerPopupOpen] = useState(false);
   const [paymentShortcutToken, setPaymentShortcutToken] = useState(0);
   const [pendingCancel, setPendingCancel] = useState<PendingCancel>(null);
+  const [shiftCloseMode, setShiftCloseMode] = useState<ShiftCloseMode>(null);
+  const [pendingCloseDraft, setPendingCloseDraft] = useState<{ declaredCash: number; observation: string } | null>(null);
   const [paymentBusy, setPaymentBusy] = useState(false);
 
   const isOffline = connectionStatus === 'OFFLINE';
+  const shiftExpectedCash = expectedShiftCash(posState);
 
   const {
     tabs,
@@ -115,29 +95,18 @@ export function Home() {
       activeSale.total > 0
   );
 
-  const statusTitle = useMemo(() => {
-    if (!posState.cashRegisterOpen) return 'Caja cerrada';
-    if (!posState.shiftOpen) return 'Turno no iniciado';
-    if (!activeSale) return 'Listo para vender';
-    return 'Venta en curso';
-  }, [activeSale, posState.cashRegisterOpen, posState.shiftOpen]);
+  const shiftStatusLabel = useMemo(() => {
+    if (shiftCloseMode === 'count') return 'Cierre en proceso';
+    if (shiftCloseMode === 'supervisor') return 'Esperando supervisor';
+    if (shiftCloseMode === 'summary') return 'Turno cerrado';
+    if (!posState.shiftOpen) return 'Caja cerrada';
+    return `Turno abierto - ${posState.terminalName} - ${posState.cashierName}`;
+  }, [posState.cashierName, posState.shiftOpen, posState.terminalName, shiftCloseMode]);
 
   const lastScannedItem = useMemo(
     () => activeSale?.items.find((item) => item.id === lastScannedItemId) ?? null,
     [activeSale?.items, lastScannedItemId]
   );
-
-  useEffect(() => {
-    localStorage.setItem(POS_STATE_KEY, JSON.stringify(posState));
-  }, [posState]);
-
-  useEffect(() => {
-    localStorage.setItem(ROLE_KEY, JSON.stringify(role));
-  }, [role]);
-
-  useEffect(() => {
-    localStorage.setItem(CONNECTION_KEY, JSON.stringify(connectionStatus));
-  }, [connectionStatus]);
 
   useEffect(() => {
     focusProductInput();
@@ -246,27 +215,40 @@ export function Home() {
     focusProductInput();
   };
 
-  const validatePayment = () => {
-    if (!activeSale) return 'No hay venta activa.';
-    if (!activeSale.payment.method) return 'Selecciona un medio de pago.';
-    if (activeSale.payment.method === 'CASH' && activeSale.payment.cashReceived < activeSale.total) {
-      return 'El monto recibido es menor al total.';
+  const openShift = (openingFloat: number) => {
+    setPosState(openShiftState(posState, openingFloat));
+    setShiftCloseMode(null);
+    setMessage('Turno abierto correctamente.');
+    window.setTimeout(() => {
+      const result = createSale();
+      if (!result.ok) focusProductInput();
+    }, 0);
+  };
+
+  const startShiftClose = () => {
+    if (!posState.shiftOpen) return;
+    if (paymentBusy) {
+      setMessage('Hay un pago en proceso.');
+      return;
     }
-    if (
-      (activeSale.payment.method === 'DEBIT_CARD' || activeSale.payment.method === 'CREDIT_CARD') &&
-      activeSale.payment.terminalStatus !== 'APPROVED'
-    ) {
-      return 'El pago con tarjeta aun no esta aprobado.';
+    const openSales = tabs.filter((tab) => tab.status !== 'PAID' && tab.status !== 'CANCELLED');
+    if (openSales.some((tab) => tab.items.length > 0)) {
+      setMessage('Cobra o cancela las ventas abiertas antes de cerrar turno.');
+      return;
     }
-    if (activeSale.payment.method === 'BANK_TRANSFER' && !activeSale.payment.transferCode.trim()) {
-      return 'Ingresa el codigo de operacion.';
-    }
-    return null;
+    setShiftCloseMode('count');
+  };
+
+  const finishShiftClose = (declaredCash: number, observation?: string, supervisorUser?: string) => {
+    setPosState(closeShiftState(posState, declaredCash, observation, supervisorUser));
+    setPendingCloseDraft(null);
+    setShiftCloseMode('summary');
+    setMessage(null);
   };
 
   const handleConfirmPayment = async () => {
     if (!activeTabId || !activeSale || paymentBusy) return;
-    const error = validatePayment();
+    const error = validateSalePayment(activeSale);
     if (error) {
       setMessage(error);
       return;
@@ -275,10 +257,7 @@ export function Home() {
     if (!method) return;
     setPaymentBusy(true);
     updatePayment(activeTabId, {
-      terminalStatus:
-        method === 'DEBIT_CARD' || method === 'CREDIT_CARD'
-          ? 'CONNECTING'
-          : activeSale.payment.terminalStatus,
+      terminalStatus: isCardPayment(method) ? 'CONNECTING' : activeSale.payment.terminalStatus,
     });
     const result = await mockProcessPayment(method, isOffline);
     if (!result.ok) {
@@ -288,10 +267,12 @@ export function Home() {
       focusProductInput();
       return;
     }
+    setPosState((current) => addPaidSaleToShift(current, activeSale.total, method === 'CASH'));
     markSaleAsPaid(activeTabId);
-    setMessage(result.message);
+    const approvedMessage = `${result.message} Medio: ${paymentLabel(method)}.`;
+    setMessage(approvedMessage);
     window.setTimeout(() => {
-      setMessage((current) => (current === result.message ? null : current));
+      setMessage((current) => (current === approvedMessage ? null : current));
     }, 2600);
     setPaymentBusy(false);
     window.setTimeout(() => {
@@ -346,18 +327,13 @@ export function Home() {
         if (event.key === '+') handleQuantity(item.id, item.quantity + 1);
         if (event.key === '-') handleDecrease(item.id);
       }
-      if (event.key === 'Enter' && !posState.cashRegisterOpen) {
-        setPosState({ ...posState, cashRegisterOpen: true });
-        setMessage('Caja abierta correctamente.');
-      } else if (event.key === 'Enter' && posState.cashRegisterOpen && !posState.shiftOpen) {
-        setPosState({ ...posState, shiftOpen: true, shiftId: 'SHIFT-2026-001' });
-        setMessage('Turno iniciado correctamente.');
-      } else if (event.key === 'Enter' && posState.cashRegisterOpen && posState.shiftOpen && !activeSale) {
+      if (event.key === 'Enter' && posState.cashRegisterOpen && posState.shiftOpen && !activeSale && !shiftCloseMode) {
         handleCreateSale();
       }
       if (event.key === 'Escape') {
         setCustomerPopupOpen(false);
         setPendingCancel(null);
+        if (shiftCloseMode !== 'summary') setShiftCloseMode(null);
       }
     };
     window.addEventListener('keydown', handler);
@@ -376,39 +352,22 @@ export function Home() {
       setMessage('Venta cancelada.');
       focusProductInput();
     }
-    if (pendingCancel.type === 'close-register') {
-      setPosState({ ...posState, cashRegisterOpen: false, shiftOpen: false, shiftId: null });
-      setMessage('Caja cerrada correctamente.');
-    }
     setPendingCancel(null);
   };
 
   return (
     <main className="pos-shell">
-      <header className="pos-topbar">
-        <div className="topbar-brand">
-          <strong>POS Mimbral</strong>
-        </div>
-
-        <div className="topbar-actions">
-          <button className="nav-menu-button" type="button" onClick={handleCreateSale}>
-            <span aria-hidden="true">+</span>
-            <small>F2</small>
-            <strong>Nueva venta</strong>
-          </button>
-        </div>
-
-        <div className="topbar-context">
-          <strong>{statusTitle}</strong>
-          <span>{posState.storeName}</span>
-          <span>{posState.terminalName}</span>
-          <span>{posState.cashierName}</span>
-        </div>
-
-        <PosStatusBar
+      {(posState.shiftOpen || shiftCloseMode) && (
+        <PosHeader
+          shiftOpen={posState.shiftOpen}
+          shiftStatusLabel={shiftStatusLabel}
+          storeName={posState.storeName}
+          terminalName={posState.terminalName}
           connectionStatus={connectionStatus}
           role={role}
           pendingCount={tabs.filter((tab) => tab.pendingSync).length}
+          onCreateSale={handleCreateSale}
+          onStartShiftClose={startShiftClose}
           onToggleConnection={() => {
             if (connectionStatus === 'OFFLINE') {
               setConnectionStatus('SYNCING');
@@ -437,43 +396,51 @@ export function Home() {
             }, 700);
           }}
         />
-      </header>
-
-      {!posState.cashRegisterOpen && (
-        <section className="gate-screen">
-          <h2>Caja cerrada</h2>
-          <p>Para comenzar debes abrir caja.</p>
-          <button
-            className="primary-button"
-            type="button"
-            onClick={() => {
-              setPosState({ ...posState, cashRegisterOpen: true });
-              setMessage('Caja abierta correctamente.');
-            }}
-          >
-            Abrir caja
-          </button>
-        </section>
       )}
 
-      {posState.cashRegisterOpen && !posState.shiftOpen && (
-        <section className="gate-screen">
-          <h2>Turno no iniciado</h2>
-          <p>Para vender debes iniciar turno.</p>
-          <button
-            className="primary-button"
-            type="button"
-            onClick={() => {
-              setPosState({ ...posState, shiftOpen: true, shiftId: 'SHIFT-2026-001' });
-              setMessage('Turno iniciado correctamente.');
-            }}
-          >
-            Iniciar turno
-          </button>
-        </section>
+      {shiftCloseMode && (
+        <ShiftControlPanel
+          mode={shiftCloseMode}
+          posState={posState}
+          expectedCash={shiftExpectedCash}
+          summary={posState.lastShiftClose ?? null}
+          initialDeclaredCash={pendingCloseDraft?.declaredCash}
+          initialObservation={pendingCloseDraft?.observation}
+          onOpenShift={openShift}
+          onCancelClose={() => {
+            setShiftCloseMode(null);
+            setPendingCloseDraft(null);
+            focusProductInput();
+          }}
+          onRequestSupervisor={(declaredCash, observation) => {
+            setPendingCloseDraft({ declaredCash, observation });
+            setShiftCloseMode('supervisor');
+          }}
+          onCloseShift={(declaredCash, observation, supervisorUser) =>
+            finishShiftClose(declaredCash, observation, supervisorUser)
+          }
+          onFinishSummary={() => {
+            setShiftCloseMode(null);
+            setMessage('Abre turno para volver a vender.');
+          }}
+        />
       )}
 
-      {posState.cashRegisterOpen && posState.shiftOpen && (
+      {!shiftCloseMode && !posState.shiftOpen && (
+        <ShiftControlPanel
+          mode="closed"
+          posState={posState}
+          expectedCash={shiftExpectedCash}
+          summary={posState.lastShiftClose ?? null}
+          onOpenShift={openShift}
+          onCancelClose={() => undefined}
+          onRequestSupervisor={() => undefined}
+          onCloseShift={() => undefined}
+          onFinishSummary={() => undefined}
+        />
+      )}
+
+      {!shiftCloseMode && posState.cashRegisterOpen && posState.shiftOpen && (
         <>
           <OpenSalesTabs
             tabs={tabs}
@@ -503,14 +470,10 @@ export function Home() {
                 className="ghost-button"
                 type="button"
                 onClick={() => {
-                  if (tabs.length > 0) {
-                    setMessage('Cierra o cobra las ventas abiertas antes de cerrar caja.');
-                    return;
-                  }
-                  setPendingCancel({ type: 'close-register' });
+                  startShiftClose();
                 }}
               >
-                Cerrar caja
+                Cerrar turno
               </button>
             </section>
           )}
@@ -594,23 +557,17 @@ export function Home() {
           title={
             pendingCancel.type === 'item'
               ? 'Eliminar producto'
-              : pendingCancel.type === 'close-register'
-                ? 'Cerrar caja'
-                : 'Cancelar venta'
+              : 'Cancelar venta'
           }
           description={
             pendingCancel.type === 'item'
               ? 'Eliminar este producto de la venta?'
-              : pendingCancel.type === 'close-register'
-                ? 'Se cerrara la caja y el turno actual.'
-                : 'Esta venta tiene productos agregados. Quieres cancelarla?'
+              : 'Esta venta tiene productos agregados. Quieres cancelarla?'
           }
           confirmLabel={
             pendingCancel.type === 'item'
               ? 'Eliminar'
-              : pendingCancel.type === 'close-register'
-                ? 'Cerrar caja'
-                : 'Si, cancelar venta'
+              : 'Si, cancelar venta'
           }
           onCancel={() => setPendingCancel(null)}
           onConfirm={confirmPendingCancel}
