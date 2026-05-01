@@ -13,7 +13,7 @@ export type PaymentMethod =
   | 'DEBIT_CARD'
   | 'CREDIT_CARD'
   | 'BANK_TRANSFER'
-  | 'INTERNAL_CREDIT';
+  | 'OTHER';
 
 export type TerminalPaymentStatus =
   | 'IDLE'

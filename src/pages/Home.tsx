@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActiveSaleWorkspace } from '../components/pos/ActiveSaleWorkspace';
 import { ConfirmDialog } from '../components/pos/ConfirmDialog';
+import { CustomerRutPopup } from '../components/pos/CustomerRutPopup';
 import { OpenSalesTabs } from '../components/pos/OpenSalesTabs';
 import { PosStatusBar } from '../components/pos/PosStatusBar';
 import { SaleCompletedScreen } from '../components/pos/SaleCompletedScreen';
-import { formatCurrency } from '../lib/format';
 import { mockPosState } from '../mocks/posState';
 import { mockFindPreventa, mockProcessPayment } from '../services/posMockApi';
 import type { ConnectionStatus, PosState, Product, SaleItem, SaleTab, UserRole } from '../types/pos';
@@ -42,6 +42,27 @@ function isEditingFormField() {
   return active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement;
 }
 
+function playScanBeep() {
+  try {
+    const AudioContextClass =
+      window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = new AudioContextClass();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.value = 880;
+    gain.gain.setValueAtTime(0.035, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.08);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.08);
+  } catch {
+    // Optional audio feedback should never interrupt the sale.
+  }
+}
+
 export function Home() {
   const [posState, setPosState] = useState<PosState>(() => loadJson(POS_STATE_KEY, mockPosState));
   const [role, setRole] = useState<UserRole>(() => loadJson(ROLE_KEY, 'CASHIER' as UserRole));
@@ -50,6 +71,11 @@ export function Home() {
   );
   const [message, setMessage] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [lastScannedItemId, setLastScannedItemId] = useState<string | null>(null);
+  const [recentItemId, setRecentItemId] = useState<string | null>(null);
+  const [scanPulseToken, setScanPulseToken] = useState(0);
+  const [customerPopupOpen, setCustomerPopupOpen] = useState(false);
+  const [paymentShortcutToken, setPaymentShortcutToken] = useState(0);
   const [pendingCancel, setPendingCancel] = useState<PendingCancel>(null);
   const [paymentBusy, setPaymentBusy] = useState(false);
 
@@ -96,6 +122,11 @@ export function Home() {
     return 'Venta en curso';
   }, [activeSale, posState.cashRegisterOpen, posState.shiftOpen]);
 
+  const lastScannedItem = useMemo(
+    () => activeSale?.items.find((item) => item.id === lastScannedItemId) ?? null,
+    [activeSale?.items, lastScannedItemId]
+  );
+
   useEffect(() => {
     localStorage.setItem(POS_STATE_KEY, JSON.stringify(posState));
   }, [posState]);
@@ -129,7 +160,14 @@ export function Home() {
   const handleProduct = (product: Product) => {
     if (!activeTabId) return;
     const result = addItemToSale(activeTabId, product);
-    if (result.itemId) setSelectedItemId(result.itemId);
+    if (result.itemId) {
+      setSelectedItemId(result.itemId);
+      setLastScannedItemId(result.itemId);
+      setRecentItemId(result.itemId);
+      setScanPulseToken((value) => value + 1);
+      playScanBeep();
+      window.setTimeout(() => setRecentItemId((current) => (current === result.itemId ? null : current)), 1600);
+    }
     setMessage(result.message);
     focusProductInput();
   };
@@ -153,6 +191,14 @@ export function Home() {
     }
 
     const result = addPreventaToSale(activeTabId, preventa);
+    if (result.itemId) {
+      setSelectedItemId(result.itemId);
+      setLastScannedItemId(result.itemId);
+      setRecentItemId(result.itemId);
+      setScanPulseToken((value) => value + 1);
+      playScanBeep();
+      window.setTimeout(() => setRecentItemId((current) => (current === result.itemId ? null : current)), 1600);
+    }
     setMessage(result.message);
     focusProductInput();
   };
@@ -215,13 +261,6 @@ export function Home() {
     if (activeSale.payment.method === 'BANK_TRANSFER' && !activeSale.payment.transferCode.trim()) {
       return 'Ingresa el codigo de operacion.';
     }
-    if (activeSale.payment.method === 'INTERNAL_CREDIT') {
-      if (!activeSale.customer.id) return 'Para vender con credito interno debes seleccionar un cliente.';
-      if (!activeSale.customer.creditEnabled) return 'Este cliente no tiene credito interno habilitado.';
-      if ((activeSale.customer.availableCredit ?? 0) < activeSale.total) {
-        return `Credito disponible insuficiente: ${formatCurrency(activeSale.customer.availableCredit ?? 0)}.`;
-      }
-    }
     return null;
   };
 
@@ -251,6 +290,9 @@ export function Home() {
     }
     markSaleAsPaid(activeTabId);
     setMessage(result.message);
+    window.setTimeout(() => {
+      setMessage((current) => (current === result.message ? null : current));
+    }, 2600);
     setPaymentBusy(false);
     window.setTimeout(() => {
       const next = createSale();
@@ -266,10 +308,11 @@ export function Home() {
       }
       if (event.key === 'F4' && activeTabId) {
         event.preventDefault();
-        document.querySelector<HTMLInputElement>('[data-customer-search="true"]')?.focus();
+        setCustomerPopupOpen(true);
       }
       if (event.key === 'F8' && canPay) {
         event.preventDefault();
+        setPaymentShortcutToken((value) => value + 1);
         updatePayment(activeTabId!, { method: activeSale?.payment.method ?? 'CASH' });
       }
       const editingFormField = isEditingFormField();
@@ -313,6 +356,7 @@ export function Home() {
         handleCreateSale();
       }
       if (event.key === 'Escape') {
+        setCustomerPopupOpen(false);
         setPendingCancel(null);
       }
     };
@@ -342,17 +386,25 @@ export function Home() {
   return (
     <main className="pos-shell">
       <header className="pos-topbar">
-        <div className="topbar-identity">
-          <div className="topbar-titleline">
-            <strong>POS Mimbral</strong>
-            <span>{statusTitle}</span>
-          </div>
-          <div className="terminal-meta">
-            <span>{posState.storeName}</span>
-            <span>{posState.terminalName}</span>
-            <span>{posState.cashierName}</span>
-          </div>
+        <div className="topbar-brand">
+          <strong>POS Mimbral</strong>
         </div>
+
+        <div className="topbar-actions">
+          <button className="nav-menu-button" type="button" onClick={handleCreateSale}>
+            <span aria-hidden="true">+</span>
+            <small>F2</small>
+            <strong>Nueva venta</strong>
+          </button>
+        </div>
+
+        <div className="topbar-context">
+          <strong>{statusTitle}</strong>
+          <span>{posState.storeName}</span>
+          <span>{posState.terminalName}</span>
+          <span>{posState.cashierName}</span>
+        </div>
+
         <PosStatusBar
           connectionStatus={connectionStatus}
           role={role}
@@ -473,18 +525,19 @@ export function Home() {
               canPay={canPay}
               message={message}
               selectedItemId={selectedItemId}
+              lastScannedItem={lastScannedItem}
+              scanPulseToken={scanPulseToken}
+              recentItemId={recentItemId}
               canEditPrice={permissions.canEditPrice}
               canRemoveItem={permissions.canRemoveItem}
               canCancelSale={permissions.canCancelSale}
               paymentBusy={paymentBusy}
+              paymentShortcutToken={paymentShortcutToken}
               onSelectItem={setSelectedItemId}
               onAddProduct={handleProduct}
               onLoadPreventa={handleLoadPreventa}
               onMissingProduct={handleMissingProduct}
-              onCustomerChange={(customer) => {
-                updateSaleCustomer(activeSale.id, customer);
-                setMessage(`Cliente: ${customer.name}.`);
-              }}
+              onOpenCustomerPopup={() => setCustomerPopupOpen(true)}
               onHoldSale={handleHoldSale}
               onCancelSale={() => handleCancelSale(activeSale)}
               onIncrease={(itemId) => {
@@ -522,6 +575,19 @@ export function Home() {
       )}
 
       {message && !activeSale && <div className="feedback-banner">{message}</div>}
+
+      {customerPopupOpen && activeSale && (
+        <CustomerRutPopup
+          onClose={() => {
+            setCustomerPopupOpen(false);
+            focusProductInput();
+          }}
+          onSelectCustomer={(customer) => {
+            updateSaleCustomer(activeSale.id, customer);
+            setMessage(`Cliente: ${customer.name}.`);
+          }}
+        />
+      )}
 
       {pendingCancel && (
         <ConfirmDialog

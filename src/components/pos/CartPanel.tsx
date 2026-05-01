@@ -4,6 +4,7 @@ import type { SaleItem } from '../../types/pos';
 type CartPanelProps = {
   items: SaleItem[];
   selectedItemId: string | null;
+  recentItemId: string | null;
   canEditPrice: boolean;
   canRemoveItem: boolean;
   onSelect: (itemId: string) => void;
@@ -17,6 +18,7 @@ type CartPanelProps = {
 export function CartPanel({
   items,
   selectedItemId,
+  recentItemId,
   canEditPrice,
   canRemoveItem,
   onSelect,
@@ -36,17 +38,23 @@ export function CartPanel({
   }
 
   return (
-    <section className="cart-panel">
-      <h2>Productos</h2>
+    <section className="cart-panel ticket-panel">
+      <div className="ticket-heading">
+        <h2>Ticket</h2>
+        <span>{items.length} lineas</span>
+      </div>
       <div className="cart-list">
         {items.map((item) => (
           <article
             key={item.id}
-            className={`cart-item ${selectedItemId === item.id ? 'cart-item-selected' : ''}`}
+            className={`cart-item ticket-item ${selectedItemId === item.id ? 'cart-item-selected' : ''} ${
+              recentItemId === item.id ? 'cart-item-recent' : ''
+            }`}
             tabIndex={0}
             onClick={() => onSelect(item.id)}
             onFocus={() => onSelect(item.id)}
           >
+            <strong className="ticket-qty">{item.quantity}x</strong>
             <div className="cart-copy">
               <div className="item-title-row">
                 <strong>{item.name}</strong>
@@ -54,40 +62,19 @@ export function CartPanel({
                   {item.source === 'PREVENTA' ? 'PREVENTA' : 'AUTO'}
                 </span>
               </div>
-              <span>SKU: {item.sku}</span>
-              {item.source === 'PREVENTA' && <span>Vendedor: {item.sellerName}</span>}
-              <p>
-                IVA {item.iva}% - Desc. {item.discountPercent}% - Subtotal: {formatCurrency(item.total)}
-              </p>
+              <span>
+                SKU: {item.sku}
+                {item.source === 'PREVENTA' && item.sellerName ? ` - ${item.sellerName}` : ''}
+              </span>
+              {(item.discountPercent > 0 || item.iva > 0) && (
+                <p>IVA {item.iva}% - Desc. {item.discountPercent}%</p>
+              )}
             </div>
-            <div className="price-editor">
-              <label>
-                Precio
-                <input
-                  value={item.unitPrice}
-                  inputMode="numeric"
-                  disabled={!canEditPrice || item.source === 'PREVENTA'}
-                  title={
-                    item.source === 'PREVENTA'
-                      ? 'Precio de preventa bloqueado'
-                      : canEditPrice
-                        ? 'Editar precio'
-                        : 'Requiere supervisor'
-                  }
-                  onChange={(event) => onPriceChange(item.id, Number(event.target.value))}
-                />
-              </label>
-            </div>
-            <div className="quantity-controls">
+            <strong className="ticket-subtotal">{formatCurrency(item.total)}</strong>
+            <div className="ticket-controls">
               <button type="button" aria-label="Disminuir" onClick={() => onDecrease(item.id)}>
                 -
               </button>
-              <input
-                value={item.quantity}
-                inputMode="numeric"
-                aria-label="Cantidad"
-                onChange={(event) => onQuantityChange(item.id, Number(event.target.value))}
-              />
               <button type="button" aria-label="Aumentar" onClick={() => onIncrease(item.id)}>
                 +
               </button>
@@ -101,6 +88,45 @@ export function CartPanel({
               >
                 x
               </button>
+            </div>
+            {canEditPrice && item.source !== 'PREVENTA' && (
+              <div className="price-editor ticket-price-editor">
+                <label>
+                  Precio
+                  <input
+                    value={item.unitPrice}
+                    inputMode="numeric"
+                    title="Editar precio"
+                    onChange={(event) => onPriceChange(item.id, Number(event.target.value))}
+                  />
+                </label>
+              </div>
+            )}
+            <div className="quantity-controls ticket-quantity-fallback">
+              <input
+                value={item.quantity}
+                inputMode="numeric"
+                aria-label="Cantidad"
+                onChange={(event) => onQuantityChange(item.id, Number(event.target.value))}
+              />
+              <div className="price-editor">
+                <label>
+                  Precio
+                  <input
+                    value={item.unitPrice}
+                    inputMode="numeric"
+                    disabled={!canEditPrice || item.source === 'PREVENTA'}
+                    title={
+                      item.source === 'PREVENTA'
+                        ? 'Precio de preventa bloqueado'
+                        : canEditPrice
+                          ? 'Editar precio'
+                          : 'Requiere supervisor'
+                    }
+                    onChange={(event) => onPriceChange(item.id, Number(event.target.value))}
+                  />
+                </label>
+              </div>
             </div>
           </article>
         ))}

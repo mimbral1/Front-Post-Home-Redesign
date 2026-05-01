@@ -6,13 +6,25 @@ type SaleCompletedScreenProps = {
   onNewSale: () => void;
 };
 
+function paymentLabel(method: SaleTab['payment']['method']) {
+  if (method === 'CASH') return 'EFECTIVO';
+  if (method === 'DEBIT_CARD') return 'DEBITO';
+  if (method === 'CREDIT_CARD') return 'CREDITO';
+  if (method === 'BANK_TRANSFER') return 'TRANSFERENCIA';
+  if (method === 'OTHER') return 'OTRO';
+  return 'SIN MEDIO';
+}
+
 export function SaleCompletedScreen({ sale, onNewSale }: SaleCompletedScreenProps) {
   return (
     <section className="completed-screen">
-      <p className="eyebrow">Venta completada</p>
+      <div className="success-check" aria-hidden="true">
+        ✓
+      </div>
+      <p className="eyebrow">Pago aprobado</p>
       <h2>{sale.completedSaleNumber ?? 'Venta pagada'}</h2>
       <p>Total pagado: {formatCurrency(sale.total)}</p>
-      <p>Medio de pago: {sale.payment.method ?? 'Sin medio'}</p>
+      <p>Medio de pago: {paymentLabel(sale.payment.method)}</p>
       <div className="completed-actions">
         <button className="primary-button" type="button" onClick={onNewSale}>
           Nueva venta

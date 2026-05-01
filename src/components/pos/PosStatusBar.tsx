@@ -35,11 +35,11 @@ export function PosStatusBar({
       </button>
 
       <button className="role-pill" type="button" onClick={onToggleRole}>
-        Rol: {role === 'SUPERVISOR' ? 'Supervisor' : 'Cajero'}
+        {role === 'SUPERVISOR' ? 'Supervisor' : 'Cajero'}
       </button>
 
       <button className="sync-pill" type="button" disabled={connectionStatus === 'OFFLINE'} onClick={onSync}>
-        Pendientes: {pendingCount}
+        Pendientes {pendingCount}
       </button>
     </section>
   );

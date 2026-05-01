@@ -1,8 +1,8 @@
 import { mockProducts } from '../../mocks/products';
-import type { Customer, Product, SaleItem, SaleTab } from '../../types/pos';
+import type { Product, SaleItem, SaleTab } from '../../types/pos';
 import { CartPanel } from './CartPanel';
 import { CheckoutPanel } from './CheckoutPanel';
-import { PreventaInput } from './PreventaInput';
+import { LastScannedProduct } from './LastScannedProduct';
 import { ProductSearchInput } from './ProductSearchInput';
 
 type ActiveSaleWorkspaceProps = {
@@ -14,11 +14,15 @@ type ActiveSaleWorkspaceProps = {
   canRemoveItem: boolean;
   canCancelSale: boolean;
   paymentBusy: boolean;
+  paymentShortcutToken: number;
+  lastScannedItem: SaleItem | null;
+  scanPulseToken: number;
+  recentItemId: string | null;
   onSelectItem: (itemId: string) => void;
   onAddProduct: (product: Product) => void;
   onLoadPreventa: (preventaId: string) => void;
   onMissingProduct: (query: string) => void;
-  onCustomerChange: (customer: Customer) => void;
+  onOpenCustomerPopup: () => void;
   onHoldSale: () => void;
   onCancelSale: () => void;
   onIncrease: (itemId: string) => void;
@@ -39,11 +43,15 @@ export function ActiveSaleWorkspace({
   canRemoveItem,
   canCancelSale,
   paymentBusy,
+  paymentShortcutToken,
+  lastScannedItem,
+  scanPulseToken,
+  recentItemId,
   onSelectItem,
   onAddProduct,
   onLoadPreventa,
   onMissingProduct,
-  onCustomerChange,
+  onOpenCustomerPopup,
   onHoldSale,
   onCancelSale,
   onIncrease,
@@ -77,17 +85,22 @@ export function ActiveSaleWorkspace({
         </div>
       </header>
 
+      <section className="sale-search-row">
+        <ProductSearchInput
+          products={mockProducts}
+          onProductSelected={onAddProduct}
+          onPreventaCode={onLoadPreventa}
+          onMissingProduct={onMissingProduct}
+        />
+      </section>
+
       <div className="execution-grid">
         <section className="left-execution">
-          <PreventaInput onPreventaSubmit={onLoadPreventa} />
-          <ProductSearchInput
-            products={mockProducts}
-            onProductSelected={onAddProduct}
-            onMissingProduct={onMissingProduct}
-          />
+          <LastScannedProduct item={lastScannedItem} pulseKey={scanPulseToken} />
           <CartPanel
             items={sale.items}
             selectedItemId={selectedItemId}
+            recentItemId={recentItemId}
             canEditPrice={canEditPrice}
             canRemoveItem={canRemoveItem}
             onSelect={onSelectItem}
@@ -104,7 +117,8 @@ export function ActiveSaleWorkspace({
           canPay={canPay}
           message={message}
           paymentBusy={paymentBusy}
-          onCustomerChange={onCustomerChange}
+          paymentShortcutToken={paymentShortcutToken}
+          onOpenCustomerPopup={onOpenCustomerPopup}
           onPaymentChange={onPaymentChange}
           onConfirmPayment={onConfirmPayment}
         />

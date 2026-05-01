@@ -269,7 +269,7 @@ export function useOpenSalesTabs(isOffline = false) {
       status: 'ACTIVE',
     }));
 
-    return { ok: true, message: `Preventa ${preventa.id} cargada.` };
+    return { ok: true, message: `Preventa ${preventa.id} cargada.`, itemId: preventaItems[0]?.id };
   };
 
   const updatePayment = (tabId: string, payment: Partial<PaymentState>) => {
