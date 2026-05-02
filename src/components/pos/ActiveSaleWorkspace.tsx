@@ -1,6 +1,5 @@
 import { mockProducts } from '../../mocks/products';
 import type { Product, SaleItem, SaleTab } from '../../types/pos';
-import { CartPanel } from './CartPanel';
 import { CheckoutPanel } from './CheckoutPanel';
 import { LastScannedProduct } from './LastScannedProduct';
 import { ProductSearchInput } from './ProductSearchInput';
@@ -97,28 +96,25 @@ export function ActiveSaleWorkspace({
       <div className="execution-grid">
         <section className="left-execution">
           <LastScannedProduct item={lastScannedItem} pulseKey={scanPulseToken} />
-          <CartPanel
-            items={sale.items}
-            selectedItemId={selectedItemId}
-            recentItemId={recentItemId}
-            canEditPrice={canEditPrice}
-            canRemoveItem={canRemoveItem}
-            onSelect={onSelectItem}
-            onIncrease={onIncrease}
-            onDecrease={onDecrease}
-            onQuantityChange={onQuantityChange}
-            onPriceChange={onPriceChange}
-            onRemove={onRemove}
-          />
         </section>
 
         <CheckoutPanel
           sale={sale}
           canPay={canPay}
           message={message}
+          selectedItemId={selectedItemId}
+          recentItemId={recentItemId}
+          canEditPrice={canEditPrice}
+          canRemoveItem={canRemoveItem}
           paymentBusy={paymentBusy}
           paymentShortcutToken={paymentShortcutToken}
+          onSelectItem={onSelectItem}
           onOpenCustomerPopup={onOpenCustomerPopup}
+          onIncrease={onIncrease}
+          onDecrease={onDecrease}
+          onQuantityChange={onQuantityChange}
+          onPriceChange={onPriceChange}
+          onRemove={onRemove}
           onPaymentChange={onPaymentChange}
           onConfirmPayment={onConfirmPayment}
         />

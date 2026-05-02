@@ -1,14 +1,25 @@
 import { useEffect, useState } from 'react';
 import { formatCurrency } from '../../lib/format';
-import type { PaymentMethod, SaleTab } from '../../types/pos';
+import type { PaymentMethod, SaleItem, SaleTab } from '../../types/pos';
+import { CartPanel } from './CartPanel';
 
 type CheckoutPanelProps = {
   sale: SaleTab;
   canPay: boolean;
   message: string | null;
+  selectedItemId: string | null;
+  recentItemId: string | null;
+  canEditPrice: boolean;
+  canRemoveItem: boolean;
   paymentBusy: boolean;
   paymentShortcutToken: number;
+  onSelectItem: (itemId: string) => void;
   onOpenCustomerPopup: () => void;
+  onIncrease: (itemId: string) => void;
+  onDecrease: (itemId: string) => void;
+  onQuantityChange: (itemId: string, quantity: number) => void;
+  onPriceChange: (itemId: string, price: number) => void;
+  onRemove: (item: SaleItem) => void;
   onPaymentChange: (payment: Partial<SaleTab['payment']>) => void;
   onConfirmPayment: () => void;
 };
@@ -33,15 +44,30 @@ export function CheckoutPanel({
   sale,
   canPay,
   message,
+  selectedItemId,
+  recentItemId,
+  canEditPrice,
+  canRemoveItem,
   paymentBusy,
   paymentShortcutToken,
+  onSelectItem,
   onOpenCustomerPopup,
+  onIncrease,
+  onDecrease,
+  onQuantityChange,
+  onPriceChange,
+  onRemove,
   onPaymentChange,
   onConfirmPayment,
 }: CheckoutPanelProps) {
   const [payOpen, setPayOpen] = useState(false);
   const productCount = sale.items.reduce((sum, item) => sum + item.quantity, 0);
   const hasProducts = productCount > 0;
+  const subtotalBeforeDiscounts = sale.items.reduce(
+    (sum, item) => sum + item.quantity * item.unitPrice,
+    0
+  );
+  const discountTotal = subtotalBeforeDiscounts - sale.total;
   const change = Math.max(0, sale.payment.cashReceived - sale.total);
 
   useEffect(() => {
@@ -79,9 +105,33 @@ export function CheckoutPanel({
         <small>Cambiar con F4</small>
       </button>
 
-      <section className="total-card">
-        <span>Total a pagar</span>
-        <strong>{formatCurrency(sale.total)}</strong>
+      <CartPanel
+        items={sale.items}
+        selectedItemId={selectedItemId}
+        recentItemId={recentItemId}
+        canEditPrice={canEditPrice}
+        canRemoveItem={canRemoveItem}
+        onSelect={onSelectItem}
+        onIncrease={onIncrease}
+        onDecrease={onDecrease}
+        onQuantityChange={onQuantityChange}
+        onPriceChange={onPriceChange}
+        onRemove={onRemove}
+      />
+
+      <section className="checkout-totals">
+        <div>
+          <span>Subtotal</span>
+          <strong>{formatCurrency(subtotalBeforeDiscounts)}</strong>
+        </div>
+        <div>
+          <span>Descuentos</span>
+          <strong>{discountTotal > 0 ? `-${formatCurrency(discountTotal)}` : formatCurrency(0)}</strong>
+        </div>
+        <div className="checkout-total-row">
+          <span>TOTAL</span>
+          <strong>{formatCurrency(sale.total)}</strong>
+        </div>
         <small>{productCount} productos</small>
       </section>
 

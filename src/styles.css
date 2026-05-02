@@ -837,24 +837,25 @@ button:disabled {
 
 .execution-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(360px, 0.9fr) minmax(540px, 1.1fr);
   gap: 14px;
   align-items: stretch;
   min-height: 0;
+  height: 100%;
   overflow: hidden;
 }
 
 .left-execution {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 14px;
   min-height: 0;
   overflow: hidden;
 }
 
 .last-scan-card {
-  min-height: 210px;
-  padding: 24px;
+  min-height: 0;
+  padding: 20px;
   display: grid;
   gap: 6px;
   border: 2px solid rgba(0, 75, 120, 0.24);
@@ -878,19 +879,19 @@ button:disabled {
 
 .last-scan-card strong {
   color: var(--ink);
-  font-size: clamp(1.8rem, 3.2vw, 2.7rem);
+  font-size: clamp(1.65rem, 2.6vw, 2.35rem);
   text-transform: uppercase;
 }
 
 .last-scan-card b {
   color: var(--brand-blue);
   font-family: var(--mono);
-  font-size: clamp(4rem, 8vw, 6.4rem);
+  font-size: clamp(3.4rem, 6.4vw, 5.4rem);
   line-height: 1;
 }
 
 .last-scan-empty {
-  min-height: 132px;
+  min-height: 0;
   background: white;
   border-color: var(--line);
 }
@@ -930,10 +931,12 @@ button:disabled {
 }
 
 .ticket-panel {
-  padding: 10px 12px;
+  padding: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(180px, 1fr);
+  min-height: 220px;
   overflow: hidden;
+  background: white;
 }
 
 .ticket-heading {
@@ -941,6 +944,8 @@ button:disabled {
   justify-content: space-between;
   gap: 10px;
   align-items: center;
+  padding: 10px 12px 8px;
+  border-bottom: 1px dashed #cbd5e1;
 }
 
 .ticket-heading span {
@@ -950,7 +955,7 @@ button:disabled {
 }
 
 .empty-cart {
-  min-height: 280px;
+  min-height: 0;
   display: grid;
   place-items: center;
   text-align: center;
@@ -960,19 +965,22 @@ button:disabled {
 .cart-list {
   display: grid;
   align-content: start;
-  gap: 4px;
-  margin-top: 8px;
-  min-height: 0;
-  overflow: auto;
+  gap: 0;
+  margin-top: 0;
+  min-height: 180px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
 }
 
 .cart-item {
+  position: relative;
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 116px auto;
-  gap: 8px;
-  padding: 8px 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 10px;
+  padding: 9px 10px;
   border: 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px dashed #d8e0e8;
   border-radius: 0;
   background: white;
   outline: 0;
@@ -990,36 +998,83 @@ button:disabled {
 }
 
 .ticket-item {
-  align-items: center;
+  align-items: start;
+}
+
+.ticket-line-main {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) max-content;
+  gap: 8px;
+  align-items: start;
+  min-width: 0;
+}
+
+.ticket-qty,
+.ticket-subtotal {
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  white-space: nowrap;
 }
 
 .ticket-qty {
   color: var(--brand-blue);
-  font-family: var(--mono);
-  font-size: 1.05rem;
+}
+
+.ticket-product {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ticket-name-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.ticket-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ticket-meta,
+.ticket-discount {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.ticket-discount {
+  color: #9a3412;
 }
 
 .ticket-subtotal {
   justify-self: end;
-  font-family: var(--mono);
-  font-size: 1.05rem;
-  white-space: nowrap;
+  color: var(--ink);
 }
 
 .ticket-controls {
   display: flex;
   gap: 4px;
   justify-content: flex-end;
+  align-self: center;
 }
 
 .ticket-controls button {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
   background: #e9eef3;
   color: var(--ink);
   font-weight: 900;
   cursor: pointer;
+  line-height: 1;
 }
 
 .ticket-controls .remove-icon {
@@ -1028,7 +1083,7 @@ button:disabled {
 }
 
 .ticket-price-editor {
-  grid-column: 2 / 5;
+  grid-column: 1 / -1;
   justify-self: start;
 }
 
@@ -1036,6 +1091,14 @@ button:disabled {
   grid-template-columns: auto 96px;
   align-items: center;
   display: grid;
+}
+
+.ticket-quantity-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .ticket-quantity-fallback {
@@ -1058,25 +1121,13 @@ button:disabled {
   }
 }
 
-.cart-copy {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.item-title-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
 .source-badge {
+  flex: 0 0 auto;
   display: inline-flex;
   width: fit-content;
   border-radius: 999px;
-  padding: 3px 8px;
-  font-size: 0.72rem;
+  padding: 2px 6px;
+  font-size: 0.66rem;
   font-weight: 900;
 }
 
@@ -1096,6 +1147,20 @@ button:disabled {
   margin: 0;
   color: var(--muted);
   font-size: 0.78rem;
+}
+
+.cart-item .source-badge {
+  display: inline-flex;
+  color: inherit;
+  font-size: 0.66rem;
+}
+
+.cart-item .source-preventa {
+  color: #2346a0;
+}
+
+.cart-item .source-auto {
+  color: #475569;
 }
 
 .price-editor label {
@@ -1182,34 +1247,57 @@ button:disabled {
 }
 
 .checkout-panel {
-  position: sticky;
-  top: 14px;
   display: grid;
-  gap: 12px;
-  align-content: start;
+  grid-template-rows: auto minmax(220px, 1fr) auto auto;
+  gap: 10px;
+  align-content: stretch;
   max-height: 100%;
-  overflow: auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.total-card {
+.checkout-totals {
   display: grid;
   gap: 8px;
-  padding: 26px 18px;
+  padding: 12px;
   border-radius: var(--radius);
-  background: var(--brand-blue);
-  color: white;
-  text-align: center;
+  background: white;
+  border: 1px solid var(--line);
 }
 
-.total-card span,
-.total-card small {
-  color: rgba(255, 255, 255, 0.82);
+.checkout-totals div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: baseline;
+}
+
+.checkout-totals span,
+.checkout-totals small {
+  color: var(--muted);
   font-weight: 800;
 }
 
-.total-card strong {
+.checkout-totals strong {
+  color: var(--ink);
+  font-family: var(--mono);
+}
+
+.checkout-total-row {
+  margin-top: 4px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--brand-blue);
   color: white;
-  font-size: clamp(3rem, 5vw, 4.6rem);
+}
+
+.checkout-total-row span,
+.checkout-total-row strong {
+  color: white;
+}
+
+.checkout-total-row strong {
+  font-size: clamp(2.3rem, 4.2vw, 3.6rem);
   font-family: var(--mono);
   line-height: 1;
 }
@@ -1274,7 +1362,7 @@ button:disabled {
 
 .quick-pay {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .pay-button {
@@ -1585,6 +1673,10 @@ button:disabled {
     position: static;
   }
 
+  .checkout-panel {
+    grid-template-rows: auto minmax(260px, 1fr) auto auto;
+  }
+
   .payment-methods > div,
   .customer-results,
   .quick-customer {
@@ -1634,6 +1726,15 @@ button:disabled {
 
   .cart-item {
     grid-template-columns: 1fr;
+  }
+
+  .ticket-line-main {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .ticket-subtotal {
+    grid-column: 2;
+    justify-self: start;
   }
 
   .payment-actions,
