@@ -24,6 +24,14 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -47,11 +55,14 @@ button:disabled {
 }
 
 .pos-shell {
-  min-height: 100vh;
+  width: 100%;
+  height: 100vh;
   padding: 0 14px 14px;
   display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 12px;
-  align-content: start;
+  align-content: stretch;
+  overflow: hidden;
 }
 
 .sales-tabs-shell,
@@ -396,8 +407,10 @@ button:disabled {
 
 .shift-screen {
   width: min(100%, 680px);
-  min-height: 430px;
+  max-height: 100%;
+  min-height: min(430px, 100%);
   justify-self: center;
+  align-self: center;
   padding: 28px;
   display: grid;
   gap: 16px;
@@ -407,6 +420,7 @@ button:disabled {
   background: white;
   box-shadow: var(--shadow);
   animation: state-in 180ms ease-out;
+  overflow: hidden;
 }
 
 .shift-screen-centered {
@@ -642,7 +656,10 @@ button:disabled {
 .sale-workspace {
   padding: 14px;
   display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 12px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .sale-header {
@@ -822,12 +839,17 @@ button:disabled {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 14px;
-  align-items: start;
+  align-items: stretch;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .left-execution {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 14px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .last-scan-card {
@@ -904,10 +926,14 @@ button:disabled {
   border-radius: var(--radius);
   background: var(--surface-soft);
   padding: 14px;
+  min-height: 0;
 }
 
 .ticket-panel {
   padding: 10px 12px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .ticket-heading {
@@ -933,9 +959,10 @@ button:disabled {
 
 .cart-list {
   display: grid;
+  align-content: start;
   gap: 4px;
   margin-top: 8px;
-  max-height: min(43vh, 520px);
+  min-height: 0;
   overflow: auto;
 }
 
@@ -1159,6 +1186,9 @@ button:disabled {
   top: 14px;
   display: grid;
   gap: 12px;
+  align-content: start;
+  max-height: 100%;
+  overflow: auto;
 }
 
 .total-card {

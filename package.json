@@ -2,11 +2,54 @@
   "name": "pos-home-redesign",
   "private": true,
   "version": "1.0.0",
+  "description": "POS retail Mimbral para caja de escritorio.",
+  "author": "Mimbral",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "desktop": "npm run build && set ELECTRON_RUN_AS_NODE=&& electron .",
+    "desktop:dev": "npm run build && set ELECTRON_RUN_AS_NODE=&& electron .",
+    "desktop:pack": "npm run build && electron-builder --dir",
+    "desktop:dist": "npm run build && electron-builder"
+  },
+  "build": {
+    "appId": "cl.mimbral.pos",
+    "productName": "POS Mimbral",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "POS Mimbral"
+    }
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -16,6 +59,8 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "electron": "^41.4.0",
+    "electron-builder": "^26.8.1",
     "typescript": "^5.5.4",
     "vite": "^5.3.4"
   }
