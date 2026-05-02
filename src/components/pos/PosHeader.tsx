@@ -69,6 +69,9 @@ export function PosHeader({
         </button>
         {shiftOpen && (
           <div className="topbar-options" ref={optionsRef}>
+            <button className="topbar-close-shift" type="button" onClick={onStartShiftClose}>
+              Cerrar turno
+            </button>
             <button
               className="topbar-options-trigger"
               type="button"

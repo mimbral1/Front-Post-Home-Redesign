@@ -71,7 +71,8 @@ export function useOpenSalesTabs(isOffline = false) {
   const [activeTabId, setActiveTabId] = useState<string | null>(() => {
     const restored = loadTabs();
     const savedActive = localStorage.getItem(ACTIVE_TAB_KEY);
-    return savedActive ?? restored.find((tab) => tab.status === 'ACTIVE')?.id ?? restored[0]?.id ?? null;
+    const savedTabExists = restored.some((tab) => tab.id === savedActive);
+    return savedTabExists ? savedActive : restored.find((tab) => tab.status === 'ACTIVE')?.id ?? restored[0]?.id ?? null;
   });
   const [saleCounter, setSaleCounter] = useState(() => loadTabs().length + 1);
 
@@ -101,7 +102,9 @@ export function useOpenSalesTabs(isOffline = false) {
   };
 
   const createSale = () => {
-    if (tabs.length >= MAX_TABS) {
+    const openTabs = tabs.filter((tab) => tab.status !== 'PAID' && tab.status !== 'CANCELLED');
+
+    if (openTabs.length >= MAX_TABS) {
       return { ok: false, message: 'Ya tienes 5 ventas abiertas. Cierra o cobra una venta antes de abrir otra.' };
     }
 
@@ -123,6 +126,7 @@ export function useOpenSalesTabs(isOffline = false) {
 
     setTabs((current) =>
       current
+        .filter((tab) => tab.status !== 'PAID' && tab.status !== 'CANCELLED')
         .map((tab) =>
           tab.status === 'ACTIVE'
             ? { ...tab, status: 'ON_HOLD' as const, pendingSync: tab.pendingSync || isOffline }
@@ -291,15 +295,6 @@ export function useOpenSalesTabs(isOffline = false) {
       pendingSync: sale.pendingSync || isOffline,
       completedSaleNumber: `BOLETA-${Date.now().toString().slice(-6)}`,
     }));
-
-    window.setTimeout(() => {
-      setTabs((current) => {
-        const remaining = current.filter((tab) => tab.id !== tabId);
-        const next = remaining[0] ?? null;
-        setActiveTabId((currentActive) => (currentActive === tabId ? next?.id ?? null : currentActive));
-        return remaining.map((tab, index) => (index === 0 && !activeTabId ? { ...tab, status: 'ACTIVE' } : tab));
-      });
-    }, 2000);
   };
 
   const markAllSynced = () => {

@@ -1,5 +1,5 @@
 import { mockProducts } from '../../mocks/products';
-import type { Product, SaleItem, SaleTab } from '../../types/pos';
+import type { PaymentState, Product, SaleItem, SaleTab } from '../../types/pos';
 import { CheckoutPanel } from './CheckoutPanel';
 import { LastScannedProduct } from './LastScannedProduct';
 import { ProductSearchInput } from './ProductSearchInput';
@@ -30,7 +30,7 @@ type ActiveSaleWorkspaceProps = {
   onPriceChange: (itemId: string, price: number) => void;
   onRemove: (item: SaleItem) => void;
   onPaymentChange: (payment: Partial<SaleTab['payment']>) => void;
-  onConfirmPayment: () => void;
+  onConfirmPayment: (payment?: Partial<PaymentState>) => void;
 };
 
 export function ActiveSaleWorkspace({

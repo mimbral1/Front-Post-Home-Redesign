@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { formatCurrency } from '../../lib/format';
-import type { PaymentMethod, SaleItem, SaleTab } from '../../types/pos';
+import type { PaymentMethod, PaymentState, SaleItem, SaleTab } from '../../types/pos';
 import { CartPanel } from './CartPanel';
 
 type CheckoutPanelProps = {
@@ -21,7 +21,7 @@ type CheckoutPanelProps = {
   onPriceChange: (itemId: string, price: number) => void;
   onRemove: (item: SaleItem) => void;
   onPaymentChange: (payment: Partial<SaleTab['payment']>) => void;
-  onConfirmPayment: () => void;
+  onConfirmPayment: (payment?: Partial<PaymentState>) => void;
 };
 
 const fastMethods: Array<{ id: PaymentMethod; label: string }> = [
@@ -60,7 +60,6 @@ export function CheckoutPanel({
   onPaymentChange,
   onConfirmPayment,
 }: CheckoutPanelProps) {
-  const [payOpen, setPayOpen] = useState(false);
   const productCount = sale.items.reduce((sum, item) => sum + item.quantity, 0);
   const hasProducts = productCount > 0;
   const subtotalBeforeDiscounts = sale.items.reduce(
@@ -70,32 +69,46 @@ export function CheckoutPanel({
   const discountTotal = subtotalBeforeDiscounts - sale.total;
   const change = Math.max(0, sale.payment.cashReceived - sale.total);
 
+  const selectMethod = (method: PaymentMethod) => {
+    onPaymentChange({
+      method,
+      cashReceived: method === 'CASH' ? sale.total : sale.payment.cashReceived,
+      terminalStatus: method === 'DEBIT_CARD' || method === 'CREDIT_CARD' ? 'APPROVED' : 'IDLE',
+    });
+  };
+
+  const buildPaymentIntent = (): Partial<PaymentState> => {
+    const method = sale.payment.method ?? 'CASH';
+
+    if (method === 'CASH') {
+      return {
+        method,
+        cashReceived: sale.payment.cashReceived || sale.total,
+        terminalStatus: 'IDLE',
+      };
+    }
+
+    if (method === 'DEBIT_CARD' || method === 'CREDIT_CARD') {
+      return {
+        method,
+        terminalStatus: sale.payment.terminalStatus === 'REJECTED' ? 'REJECTED' : 'APPROVED',
+      };
+    }
+
+    return { method };
+  };
+
   useEffect(() => {
-    setPayOpen(false);
-  }, [sale.id]);
+    if (hasProducts && !sale.payment.method) {
+      selectMethod('CASH');
+    }
+  }, [hasProducts, sale.id, sale.payment.method]);
 
   useEffect(() => {
     if (paymentShortcutToken > 0 && canPay) {
-      setPayOpen(true);
+      onConfirmPayment(buildPaymentIntent());
     }
   }, [canPay, paymentShortcutToken]);
-
-  useEffect(() => {
-    if (!payOpen) return;
-    const handler = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setPayOpen(false);
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [payOpen]);
-
-  const selectMethod = (method: PaymentMethod) => {
-    setPayOpen(true);
-    onPaymentChange({
-      method,
-      terminalStatus: method === 'DEBIT_CARD' || method === 'CREDIT_CARD' ? 'WAITING' : 'IDLE',
-    });
-  };
 
   return (
     <aside className="checkout-panel">
@@ -119,108 +132,98 @@ export function CheckoutPanel({
         onRemove={onRemove}
       />
 
-      <section className="checkout-totals">
-        <div>
-          <span>Subtotal</span>
-          <strong>{formatCurrency(subtotalBeforeDiscounts)}</strong>
-        </div>
-        <div>
-          <span>Descuentos</span>
-          <strong>{discountTotal > 0 ? `-${formatCurrency(discountTotal)}` : formatCurrency(0)}</strong>
-        </div>
-        <div className="checkout-total-row">
-          <span>TOTAL</span>
-          <strong>{formatCurrency(sale.total)}</strong>
-        </div>
-        <small>{productCount} productos</small>
-      </section>
+      <div className="checkout-footer">
+        <section className="checkout-totals">
+          <div>
+            <span>Subtotal</span>
+            <strong>{formatCurrency(subtotalBeforeDiscounts)}</strong>
+          </div>
+          <div>
+            <span>Descuentos</span>
+            <strong>{discountTotal > 0 ? `-${formatCurrency(discountTotal)}` : formatCurrency(0)}</strong>
+          </div>
+          <div className="checkout-total-row">
+            <span>TOTAL</span>
+            <strong>{formatCurrency(sale.total)}</strong>
+          </div>
+          <small>{productCount} productos</small>
+        </section>
 
-      <section className={`quick-pay ${payOpen ? 'quick-pay-open' : ''}`}>
-        {!hasProducts && <p className="checkout-empty-hint">Escanea productos para comenzar</p>}
+        <section className="quick-pay">
+          <div className="quick-pay-heading">
+            <span>Forma de pago</span>
+            {hasProducts && <strong>{formatCurrency(sale.total)}</strong>}
+          </div>
 
-        {hasProducts && !payOpen && (
+          {!hasProducts && <p className="checkout-empty-hint">Escanea productos para comenzar</p>}
+
+          <div className="payment-methods-inline">
+            {fastMethods.map((method) => (
+              <button
+                key={method.id}
+                className={sale.payment.method === method.id ? 'selected-method' : ''}
+                type="button"
+                disabled={!hasProducts || paymentBusy}
+                onClick={() => selectMethod(method.id)}
+              >
+                {method.label}
+              </button>
+            ))}
+          </div>
+
+          {hasProducts && sale.payment.method === 'CASH' && (
+            <label className="field cash-field">
+              <span>Monto recibido</span>
+              <input
+                type="number"
+                min={0}
+                value={sale.payment.cashReceived || ''}
+                onChange={(event) => onPaymentChange({ cashReceived: Number(event.target.value) })}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && sale.payment.cashReceived >= sale.total) {
+                    event.preventDefault();
+                    onConfirmPayment(buildPaymentIntent());
+                  }
+                }}
+              />
+              <small>Vuelto: {formatCurrency(change)}</small>
+            </label>
+          )}
+
+          {hasProducts && sale.payment.method === 'BANK_TRANSFER' && (
+            <label className="field transfer-field">
+              <span>Codigo de operacion</span>
+              <input
+                value={sale.payment.transferCode}
+                placeholder="Ej: TRX-4582"
+                onChange={(event) => onPaymentChange({ transferCode: event.target.value })}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && sale.payment.transferCode.trim()) {
+                    event.preventDefault();
+                    onConfirmPayment(buildPaymentIntent());
+                  }
+                }}
+              />
+            </label>
+          )}
+
+          {hasProducts && (sale.payment.method === 'DEBIT_CARD' || sale.payment.method === 'CREDIT_CARD') && (
+            <div className="terminal-status">
+              <strong>{terminalText(sale.payment.terminalStatus)}</strong>
+              <span>Listo para generar la venta.</span>
+            </div>
+          )}
+
           <button
             className="primary-button pay-button"
             type="button"
-            disabled={!canPay || paymentBusy}
-            onClick={() => setPayOpen(true)}
+            disabled={paymentBusy || !canPay}
+            onClick={() => onConfirmPayment(buildPaymentIntent())}
           >
-            PAGAR
+            {paymentBusy ? 'Procesando...' : hasProducts ? 'PAGAR Y GENERAR VENTA' : 'AGREGA PRODUCTOS PARA PAGAR'}
           </button>
-        )}
-
-        {payOpen && (
-          <>
-            <div className="payment-methods-inline">
-              {fastMethods.map((method) => (
-                <button
-                  key={method.id}
-                  className={sale.payment.method === method.id ? 'selected-method' : ''}
-                  type="button"
-                  onClick={() => selectMethod(method.id)}
-                >
-                  {method.label}
-                </button>
-              ))}
-            </div>
-
-            {sale.payment.method === 'CASH' && (
-              <label className="field cash-field">
-                <span>Monto recibido</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={sale.payment.cashReceived || ''}
-                  onChange={(event) => onPaymentChange({ cashReceived: Number(event.target.value) })}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' && sale.payment.cashReceived >= sale.total) {
-                      event.preventDefault();
-                      onConfirmPayment();
-                    }
-                  }}
-                />
-                <small>Vuelto: {formatCurrency(change)}</small>
-              </label>
-            )}
-
-            {sale.payment.method === 'BANK_TRANSFER' && (
-              <label className="field transfer-field">
-                <span>Codigo de operacion</span>
-                <input
-                  value={sale.payment.transferCode}
-                  placeholder="Ej: TRX-4582"
-                  onChange={(event) => onPaymentChange({ transferCode: event.target.value })}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' && sale.payment.transferCode.trim()) {
-                      event.preventDefault();
-                      onConfirmPayment();
-                    }
-                  }}
-                />
-              </label>
-            )}
-
-            {(sale.payment.method === 'DEBIT_CARD' || sale.payment.method === 'CREDIT_CARD') && (
-              <div className="terminal-status">
-                <strong>{terminalText(sale.payment.terminalStatus)}</strong>
-                <button type="button" disabled={paymentBusy} onClick={() => onPaymentChange({ terminalStatus: 'APPROVED' })}>
-                  Simular aprobado
-                </button>
-                <button type="button" disabled={paymentBusy} onClick={() => onPaymentChange({ terminalStatus: 'REJECTED' })}>
-                  Simular rechazado
-                </button>
-                <button type="button" disabled={paymentBusy} onClick={() => onPaymentChange({ terminalStatus: 'CANCELLED' })}>
-                  Cancelar
-                </button>
-              </div>
-            )}
-
-            <button className="primary-button pay-button" type="button" disabled={paymentBusy} onClick={onConfirmPayment}>
-              {paymentBusy ? 'Procesando...' : 'Confirmar pago'}
-            </button>
-          </>
-        )}
-      </section>
+        </section>
+      </div>
 
       {message && <div className="compact-message">{message}</div>}
     </aside>

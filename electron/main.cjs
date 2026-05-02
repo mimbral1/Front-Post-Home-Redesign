@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron');
 const path = require('path');
 
 const isDev = process.env.ELECTRON_DEV === 'true';
@@ -48,6 +48,11 @@ function createMainWindow() {
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
+  ipcMain.handle('print-receipt', async (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (!window) return;
+    await window.webContents.print({ silent: false, printBackground: true });
+  });
   createMainWindow();
 
   app.on('activate', () => {

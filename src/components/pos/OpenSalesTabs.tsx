@@ -26,14 +26,16 @@ export function OpenSalesTabs({
   onSelectSale,
   onCancelSale,
 }: OpenSalesTabsProps) {
+  const openTabs = tabs.filter((tab) => tab.status !== 'PAID' && tab.status !== 'CANCELLED');
+
   return (
     <section className="sales-tabs-shell">
       <div className="sales-tabs-heading">
         <strong>Ventas abiertas</strong>
-        <span>{tabs.length}/{maxTabs}</span>
+        <span>{openTabs.length}/{maxTabs}</span>
       </div>
       <div className="sales-tabs" role="tablist" aria-label="Ventas abiertas">
-        {tabs.map((tab) => (
+        {openTabs.map((tab) => (
           <div
             key={tab.id}
             className={`sale-tab ${tab.id === activeTabId ? 'sale-tab-active' : ''} sale-tab-${tab.status.toLowerCase()}`}

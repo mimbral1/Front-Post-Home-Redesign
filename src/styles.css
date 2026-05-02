@@ -171,8 +171,12 @@ button:disabled {
 
 .topbar-options {
   position: relative;
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 
+.topbar-close-shift,
 .topbar-options-trigger {
   min-height: 32px;
   border: 0;
@@ -187,10 +191,15 @@ button:disabled {
   cursor: pointer;
 }
 
+.topbar-close-shift {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--brand-blue);
+}
+
 .topbar-options-menu {
   position: absolute;
   top: calc(100% + 10px);
-  left: 0;
+  right: 0;
   z-index: 40;
 }
 
@@ -933,8 +942,8 @@ button:disabled {
 .ticket-panel {
   padding: 0;
   display: grid;
-  grid-template-rows: auto minmax(180px, 1fr);
-  min-height: 220px;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
   overflow: hidden;
   background: white;
 }
@@ -967,7 +976,7 @@ button:disabled {
   align-content: start;
   gap: 0;
   margin-top: 0;
-  min-height: 180px;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-gutter: stable;
@@ -1248,7 +1257,7 @@ button:disabled {
 
 .checkout-panel {
   display: grid;
-  grid-template-rows: auto minmax(220px, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 10px;
   align-content: stretch;
   max-height: 100%;
@@ -1362,25 +1371,49 @@ button:disabled {
 
 .quick-pay {
   display: grid;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: white;
+}
+
+.checkout-footer {
+  display: grid;
   gap: 8px;
+  min-height: 0;
+}
+
+.quick-pay-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.quick-pay-heading span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.quick-pay-heading strong {
+  color: var(--brand-blue);
+  font-family: var(--mono);
 }
 
 .pay-button {
   width: 100%;
-  min-height: 70px;
-  font-size: 1.25rem;
+  min-height: 58px;
+  font-size: 1.12rem;
 }
 
 .payment-methods-inline {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-}
-
-@media (min-width: 1180px) {
-  .payment-methods-inline {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .payment-methods-inline .selected-method {
@@ -1395,6 +1428,12 @@ button:disabled {
   border-radius: var(--radius);
   background: #eef4ff;
   color: var(--info);
+}
+
+.terminal-status span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
 }
 
 .rut-popover-backdrop {

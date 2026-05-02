@@ -11,7 +11,7 @@ import { isCardPayment, paymentLabel, validateSalePayment } from '../lib/payment
 import { addPaidSaleToShift, closeShiftState, expectedShiftCash, openShiftState } from '../lib/shift';
 import { mockPosState } from '../mocks/posState';
 import { mockFindPreventa, mockProcessPayment } from '../services/posMockApi';
-import type { ConnectionStatus, PosState, Product, SaleItem, SaleTab, UserRole } from '../types/pos';
+import type { ConnectionStatus, PaymentState, PosState, Product, SaleItem, SaleTab, UserRole } from '../types/pos';
 import { useOpenSalesTabs } from '../hooks/useOpenSalesTabs';
 import { usePersistentState } from '../hooks/usePersistentState';
 
@@ -25,6 +25,24 @@ type ShiftCloseMode = 'count' | 'supervisor' | 'summary' | null;
 const POS_STATE_KEY = 'pos.terminalState';
 const ROLE_KEY = 'pos.userRole';
 const CONNECTION_KEY = 'pos.connectionStatus';
+const OPEN_SALES_KEY = 'pos.openSalesTabs';
+const ACTIVE_SALE_KEY = 'pos.activeSaleTabId';
+const STORAGE_VERSION_KEY = 'pos.storageVersion';
+const STORAGE_VERSION = 'retail-flow-v4';
+
+function migrateStoredState() {
+  try {
+    if (localStorage.getItem(STORAGE_VERSION_KEY) === STORAGE_VERSION) return;
+    localStorage.removeItem(POS_STATE_KEY);
+    localStorage.removeItem(OPEN_SALES_KEY);
+    localStorage.removeItem(ACTIVE_SALE_KEY);
+    localStorage.setItem(STORAGE_VERSION_KEY, STORAGE_VERSION);
+  } catch {
+    // Local storage may be unavailable in restricted contexts.
+  }
+}
+
+migrateStoredState();
 
 function focusProductInput() {
   window.setTimeout(() => {
@@ -216,12 +234,13 @@ export function Home() {
   };
 
   const openShift = (openingFloat: number) => {
-    setPosState(openShiftState(posState, openingFloat));
+    setPosState((current) => openShiftState(current, openingFloat));
     setShiftCloseMode(null);
     setMessage('Turno abierto correctamente.');
     window.setTimeout(() => {
       const result = createSale();
-      if (!result.ok) focusProductInput();
+      setMessage(result.ok ? result.message : result.message);
+      focusProductInput();
     }, 0);
   };
 
@@ -229,11 +248,6 @@ export function Home() {
     if (!posState.shiftOpen) return;
     if (paymentBusy) {
       setMessage('Hay un pago en proceso.');
-      return;
-    }
-    const openSales = tabs.filter((tab) => tab.status !== 'PAID' && tab.status !== 'CANCELLED');
-    if (openSales.some((tab) => tab.items.length > 0)) {
-      setMessage('Cobra o cancela las ventas abiertas antes de cerrar turno.');
       return;
     }
     setShiftCloseMode('count');
@@ -246,18 +260,26 @@ export function Home() {
     setMessage(null);
   };
 
-  const handleConfirmPayment = async () => {
+  const handleConfirmPayment = async (paymentOverride?: Partial<PaymentState>) => {
     if (!activeTabId || !activeSale || paymentBusy) return;
-    const error = validateSalePayment(activeSale);
+    const effectiveSale: SaleTab = {
+      ...activeSale,
+      payment: {
+        ...activeSale.payment,
+        ...paymentOverride,
+      },
+    };
+    const error = validateSalePayment(effectiveSale);
     if (error) {
       setMessage(error);
       return;
     }
-    const method = activeSale.payment.method;
+    const method = effectiveSale.payment.method;
     if (!method) return;
     setPaymentBusy(true);
+    updatePayment(activeTabId, effectiveSale.payment);
     updatePayment(activeTabId, {
-      terminalStatus: isCardPayment(method) ? 'CONNECTING' : activeSale.payment.terminalStatus,
+      terminalStatus: isCardPayment(method) ? 'CONNECTING' : effectiveSale.payment.terminalStatus,
     });
     const result = await mockProcessPayment(method, isOffline);
     if (!result.ok) {
@@ -267,7 +289,7 @@ export function Home() {
       focusProductInput();
       return;
     }
-    setPosState((current) => addPaidSaleToShift(current, activeSale.total, method === 'CASH'));
+    setPosState((current) => addPaidSaleToShift(current, effectiveSale.total, method === 'CASH'));
     markSaleAsPaid(activeTabId);
     const approvedMessage = `${result.message} Medio: ${paymentLabel(method)}.`;
     setMessage(approvedMessage);
@@ -275,10 +297,6 @@ export function Home() {
       setMessage((current) => (current === approvedMessage ? null : current));
     }, 2600);
     setPaymentBusy(false);
-    window.setTimeout(() => {
-      const next = createSale();
-      if (!next.ok) focusProductInput();
-    }, 2100);
   };
 
   useEffect(() => {
